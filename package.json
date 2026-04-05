@@ -1,0 +1,13 @@
+{
+  "name": "chatter-by-ahc",
+  "version": "1.0.0",
+  "description": "Say it once. Chatter prepares the people, the systems, and the next move.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "googleapis": "^140.0.0"
+  }
+}

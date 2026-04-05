@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chatter by AHC</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;padding:32px 24px}
+  h1{font-size:1.6rem;font-weight:700;color:#22d3ee;margin-bottom:4px}
+  p.tag{color:#64748b;font-size:.875rem;margin-bottom:28px}
+  label{display:block;font-size:.8rem;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+  textarea{width:100%;height:140px;background:#111827;color:#e5e7eb;border:1px solid #1e293b;border-radius:10px;padding:12px;font-size:.9rem;resize:vertical;outline:none}
+  textarea:focus{border-color:#22d3ee}
+  select{background:#111827;color:#e5e7eb;border:1px solid #1e293b;border-radius:8px;padding:8px 12px;font-size:.875rem;margin-bottom:20px}
+  button{padding:11px 22px;border-radius:10px;border:none;background:#22d3ee;color:#082f49;font-weight:700;cursor:pointer;font-size:.9rem;transition:opacity .15s}
+  button:hover{opacity:.85}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .row{display:flex;gap:12px;align-items:flex-end;margin:16px 0 24px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}
+  @media(max-width:600px){.grid{grid-template-columns:1fr}}
+  .card{background:#111827;border:1px solid #1e293b;border-radius:10px;padding:16px}
+  .card h3{font-size:.8rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+  pre{white-space:pre-wrap;font-size:.8rem;color:#a5f3fc;line-height:1.5}
+  .pill{display:inline-block;font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:999px;background:#0e7490;color:#e0f2fe;margin-left:8px}
+  .err{color:#f87171;font-size:.85rem;margin-top:12px}
+  #status{font-size:.8rem;color:#64748b;margin-top:8px;min-height:18px}
+</style>
+</head>
+<body>
+<h1>Chatter by AHC</h1>
+<p class="tag">Say it once. Chatter prepares the people, the systems, and the next move.</p>
+
+<label for="input">Input</label>
+<textarea id="input">We are changing pricing on Outcome Ready effective next month and need comms plus system prep.</textarea>
+
+<div class="row">
+  <div>
+    <label for="mode">Authority mode</label>
+    <select id="mode">
+      <option value="prepare_only">prepare_only</option>
+      <option value="preview_only">preview_only</option>
+      <option value="execute">execute</option>
+    </select>
+  </div>
+  <button id="go">Prepare outputs</button>
+</div>
+<div id="status"></div>
+<div id="err" class="err"></div>
+
+<div class="grid" id="grid" style="display:none">
+  <div class="card">
+    <h3>Human outputs <span class="pill" id="hcount">0</span></h3>
+    <pre id="human"></pre>
+  </div>
+  <div class="card">
+    <h3>Machine / routes <span class="pill" id="mcount">0</span></h3>
+    <pre id="machine"></pre>
+  </div>
+</div>
+
+<script>
+const btn = document.getElementById('go');
+const status = document.getElementById('status');
+const errEl = document.getElementById('err');
+
+btn.onclick = async () => {
+  btn.disabled = true;
+  errEl.textContent = '';
+  status.textContent = 'Processing…';
+  document.getElementById('grid').style.display = 'none';
+  try {
+    const r = await fetch('/api/chatter/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        input_text: document.getElementById('input').value,
+        authority_mode: document.getElementById('mode').value
+      })
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || r.statusText);
+    document.getElementById('human').textContent = JSON.stringify(j.human_outputs, null, 2);
+    document.getElementById('machine').textContent = JSON.stringify({ machine_outputs: j.machine_outputs, routes: j.routes }, null, 2);
+    document.getElementById('hcount').textContent = j.human_outputs?.length || 0;
+    document.getElementById('mcount').textContent = j.machine_outputs?.length || 0;
+    document.getElementById('grid').style.display = 'grid';
+    status.textContent = `Session ${j.sessionId} · domain: ${j.detected_domain}`;
+  } catch (e) {
+    errEl.textContent = e.message;
+    status.textContent = '';
+  } finally {
+    btn.disabled = false;
+  }
+};
+</script>
+</body>
+</html>
